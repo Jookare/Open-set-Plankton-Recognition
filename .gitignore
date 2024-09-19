@@ -1,1 +1,5 @@
-./data/*
+# exclude all data
+data/*
+
+# except gitkeep
+!data/.gitkeep 
