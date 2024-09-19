@@ -15,9 +15,9 @@ This repository contains implementations of three open-set recognition methods:
 ## Usage
 
 ### Datasets
-The codes utilize both [SYKE-plankton_IFCB_2022](hhttps://doi.org/10.23728/b2share.abf913e5a6ad47e6baa273ae0ed6617a) and [SYKE-plakton_ZooScan_2024](https://doi.org/10.23729/fa115087-2698-4aa5-aedd-11e260b9694d) datasets.
+The codes utilize both [SYKE-plankton_IFCB_2022](https://doi.org/10.23728/b2share.abf913e5a6ad47e6baa273ae0ed6617a) and [SYKE-plakton_ZooScan_2024](https://doi.org/10.23729/fa115087-2698-4aa5-aedd-11e260b9694d) datasets. The latter dataset contains splits for both datasets.
 
-Initial step is to download both datasets and move them inside data folder if the given data-processing files are used
+1. Download both datasets, and take the folders 'images', and 'class splits' and move those inside the data folder. Move the "labeled_20201020" folder from the SYKE-plankton_IFCB_2022 inside 'images'
 
 
 
