@@ -1,6 +1,6 @@
 # exclude all data
 data/*
-__pycache__
+__pycache__/
 
 # except gitkeep
 !data/.gitkeep 
