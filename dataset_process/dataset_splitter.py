@@ -3,6 +3,8 @@ from PIL import Image
 import random
 from tqdm import tqdm
 from pathlib import Path
+import shutil
+import os
 
 # Function to save augmented images for each class in train/val/test datasets
 def save_images(image_paths, class_name,  dataset_type, output_folder_path, transform):
@@ -129,3 +131,4 @@ def split_datasets(dataset_name, transform, CLASS_SPLIT_PATHS, IMG_FOLDER_PATHS,
     print("Resizing testing images...")
     create_dataset_splits(splits_data, img_folder_path, output_folder_name, transform, dataset_type="test")
 
+    
