@@ -38,3 +38,20 @@ class train_test_transform(nn.Module):
         transform = v2.Compose(transform_list)
 
         return transform(img)
+
+def get_device():
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(f"device: {device}")
+    with torch.no_grad():
+        if device.type == 'cuda':
+            torch.cuda.empty_cache()
+    return device
+
+
+def get_dataset_path(dataset):
+    dataset_paths = {
+        "zooplankton": "../Data/images/zooplankton_224",
+        "phytoplankton": "../Data/images/phytoplankton_224"
+    }
+    return dataset_paths.get(dataset)
+

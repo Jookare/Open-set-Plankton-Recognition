@@ -17,7 +17,8 @@ class PlanktonSet(Dataset):
         
         # Get the class names from mapping
         self.class_names = [mapping[class_id] for class_id in set(self.labels)]
-
+        self.num_classes = len(self.class_names)
+        
         # Find the unknown class names
         self.unknown_classes = sorted(list(set(self.class_names) - set(known_classes)))
 

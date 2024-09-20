@@ -13,37 +13,6 @@ BACKBONE_MODELS = {
     'densenet161': densenet161,
 }
 
-def get_backbone(net_name, num_classes, weights='DEFAULT'):
-    """
-    Returns a pretrained pytorch model based on the provided backbone name.
-    
-    Args:
-        * net_name (string): Name of the network (e.g. resnet18 etc.)
-        * num_classes (int): Number of output features
-        * weights: ('DEFAULT' or None): Loads either default weights or no weights.
-    """
-    
-    model_fn = BACKBONE_MODELS.get(net_name)
-    if model_fn is None:
-        raise KeyError(f'{net_name} not in available backbone models: ' \
-                       + f'{", ".join(BACKBONE_MODELS.keys())}')
-    
-
-    backbone = model_fn(weights=weights)
-
-    # Adjust the classifier or fully connected layer based on the model architecture
-    if hasattr(backbone, 'classifier'):  # For models like DenseNet
-        num_features = backbone.classifier.in_features
-        backbone.classifier = nn.Linear(num_features, num_classes)
-    elif hasattr(backbone, 'fc'):  # For models like ResNet
-        num_features = backbone.fc.in_features
-        backbone.fc = nn.Linear(num_features, num_classes)
-    else:
-        raise AttributeError('The provided model does not have a recognized classifier or fc layer.')
-    
-    return backbone
-
-
 class Backbone(nn.Module):
     """
     Args:
