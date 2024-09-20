@@ -19,7 +19,23 @@ The codes utilize both [SYKE-plankton_IFCB_2022](https://doi.org/10.23728/b2shar
 
 1. Download both datasets, and take the folders 'images', and 'class splits' and move those inside the data folder. Move the "labeled_20201020" folder from the SYKE-plankton_IFCB_2022 inside 'images'
 
+2. Run the code in the Jupyter notebook `dataset_creator.ipynb` or alternatively run using ipython:
+```python
+ipython
+%run dataset_creator.ipynb
+exit()
+```
+What the code does:
+- The code processes the class splits and augments the training data.
+- It saves the preprocessed images into the following folders, as defined in IMG_FOLDER_PATHS:
+    - **train**: Contains the augmented and preprocessed training images.
+    - **valid**: Contains the preprocessed validation images.
+    - **test**: Contains the preprocessed test images.
+    
+>[!NOTE]
+>Some folders might be empty for zooplankton data in train and validation. This is to make sure the split class indices work as intended   
 
+3. 
 
 
 ## Citation
