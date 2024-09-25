@@ -10,7 +10,7 @@ sys.path.append('../')
 from trainer import Trainer
 from utils import NetConfig
 from dataset_process import dataset_creator
-from train_utils import train_test_transform, get_device, get_dataset_path
+from train_utils import train_test_transform, get_device, get_dataset_path, get_trial_path
 from backbones import Backbone
 
 
@@ -28,30 +28,27 @@ def parse_arguments():
     parser.add_argument('--name', default="", type = str, help='Optional name for saving') 
     return parser.parse_args()
 
-    
+   
 def main():
     args = parse_arguments()
     device = get_device()
     path = get_dataset_path(args.dataset)
 
-    if path is None:
-        raise ValueError(f"Invalid dataset name: {args.dataset}")
-    print(f"Dataset path: {path}")
+    assert path is not None, f"Invalid dataset name: {path}"
 
     # Data transforms
     transform_train = train_test_transform(num_channels=3, normalize=args.no_normalize).train()
     transform_test = train_test_transform(num_channels=3, normalize=args.no_normalize).eval()
     transform = (transform_train, transform_test)
 
-    # Define the unknown indices
-    start_idx = args.num_unk * args.trial
-    unk_idx = list(range(start_idx, start_idx + args.num_unk))
-
-    # Define datasets
+    # Define parameters for datasets
     batch_size = args.batch_size
-    train_dataset, val_dataset, _ = dataset_creator.prepare_datasets(path, transform, unk_idx=unk_idx)
+    trial_path = get_trial_path(args.dataset)
+    
+    # Define datasets
+    train_dataset, valid_dataset, _ = dataset_creator.get_datasets(path, trial_path, args.trial, transform, unk_in_valid=False, gallery=False)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=10)
-    valid_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=10)
+    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=10)
     num_classes = train_dataset.num_classes
 
     # Initialize the backbone and Arcface model
@@ -70,3 +67,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    

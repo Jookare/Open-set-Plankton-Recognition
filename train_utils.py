@@ -1,7 +1,7 @@
 import torch
 from torchvision.transforms import v2
 import torch.nn as nn
-
+from pathlib import Path
 
 class train_test_transform(nn.Module):
     
@@ -55,3 +55,9 @@ def get_dataset_path(dataset):
     }
     return dataset_paths.get(dataset)
 
+def get_trial_path(dataset):
+    trial_paths = {
+        "zooplankton": "../data/class_splits/SYKE-plankton_ZooScan_2024",
+        "phytoplankton": "../data/class_splits/SYKE-plankton_IFCB_2022"
+    }
+    return Path(trial_paths.get(dataset))

@@ -16,14 +16,14 @@ def calc_accuracies(labels, predictions, num_train_classes):
     mask_known, mask_unk = get_mask(labels, num_train_classes)
     known_accuracy = np.mean(predictions[mask_known] == labels[mask_known])
     unknown_accuracy = np.mean(predictions[mask_unk] == num_train_classes)
-    print(
-        "Known classes={:.4f}, Unknown classes={:.4f}, N-Known images {}, N-Unknown images {}".format(
-            known_accuracy,
-            unknown_accuracy,
-            np.sum(mask_known),
-            np.sum(mask_unk)
-        )
-    )
+    # print(
+    #     "Known classes={:.4f}, Unknown classes={:.4f}, N-Known images {}, N-Unknown images {}".format(
+    #         known_accuracy,
+    #         unknown_accuracy,
+    #         np.sum(mask_known),
+    #         np.sum(mask_unk)
+    #     )
+    # )
     return known_accuracy, unknown_accuracy
 
 

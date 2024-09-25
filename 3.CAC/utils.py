@@ -55,6 +55,12 @@ class CACClassif:
         self.labels_train, self.labels_valid, self.labels_test = None, None, None
         self._find_features()
         self._update_centers()
+        
+        dists = pairwise_euclidean_distance(self.features_test, self.centres)
+        self.gammas_test = dists * (1 - F.softmin(dists, dim=1))
+
+        dists = pairwise_euclidean_distance(self.features_valid, self.centres)
+        self.gammas_valid = dists * (1 - F.softmin(dists, dim=1))
 
     def _find_features(self):
         def encode_set(loader):
@@ -85,58 +91,84 @@ class CACClassif:
             new_centres[lab] /= n
         self.centres = new_centres
 
-    def validate_thresholds(self, quantile=0.95):
+    def find_thresholds(self, quantile=0.95):
         dists = pairwise_euclidean_distance(self.features_valid, self.centres)
-        uniq, _ = self.labels_valid.unique().sort()
+        uniq, _ = self.labels_train.unique().sort()
         gammas = dists * (1 - F.softmin(dists, dim=1))
-        gamma_true = torch.gather(gammas, 1, self.labels_valid.view(-1, 1)).flatten()
-        self.thresholds = torch.tensor(
-            [torch.quantile(gamma_true[self.labels_valid == lab], quantile) for lab in uniq]
-        )
 
-    def classify(self, use_th=True):
+        indexes = self.labels_valid < self.num_classes
+        known_valid = self.labels_valid[indexes]
+        
+        gamma_true = torch.gather(gammas, 1, known_valid.view(-1, 1)).flatten()
+    
+        self.thresholds = torch.tensor(
+            [torch.quantile(gamma_true[known_valid == lab], quantile) for lab in uniq]
+        )
+        
+    def set_thresholds(self, threshold):
+        uniq, _ = self.labels_train.unique().sort()
+        self.thresholds = torch.empty(uniq.shape)
+        threshold = threshold.to(torch.float64)
+        
+        for lab in uniq:
+            self.thresholds[lab] = threshold
+
+    def classify(self, test = False, use_th=True):
         if self.thresholds == None:
             raise Exception("Thresholds are not evaluated. Run validate_thresholds")
-        dists = pairwise_euclidean_distance(self.features_test, self.centres)
-        gammas = dists * (1 - F.softmin(dists, dim=1))
+
+        if test:
+            gammas = self.gammas_test
+            labels = self.labels_test.cpu().numpy()
+        else:
+            gammas = self.gammas_valid
+            labels = self.labels_valid.cpu().numpy()
+        
         pred = gammas.argmin(axis=1)
+        
         # Find the thresholds and add the values at the end of the scores.
         if use_th:
             th_expanded = self.thresholds[pred]
             scores = torch.concat((gammas, th_expanded.view(-1, 1)), dim=1)
             pred = scores.argmin(dim=1)
-        return pred.cpu().numpy(), self.labels_test.cpu().numpy()
+        
+        return pred.cpu().numpy(), labels
 
-    def multiple_quantile_classify(self, min_q, max_q=1.0):
+    def multiple_quantile_classify(self, min_th, max_th=1.0, step=0.01, use_quantile=False):
         f1_os = []
         accuracy_os = []
         accuracy_known = []
         accuracy_known_th = []
         accuracy_unknown_th = []
-        q_range = torch.arange(min_q, max_q, 0.01)
-        for q in q_range:
-            self.validate_thresholds(quantile=q)
+        # Use custom range for plain threshold
+        if use_quantile:  
+            th_range = torch.arange(min_th, max_th, step)
+        else:
+            th_range = torch.cat((torch.arange(0.000001, 0.00001, 0.000001),
+                                  torch.arange(0.00001, 0.0001, 0.00001),
+                                  torch.arange(0.0001, 0.001, 0.0001),
+                                  torch.arange(0.001, 0.01, 0.001) ))
+        for th in th_range:
+            if use_quantile:
+                # If set the th value if considered as the quantile
+                self.find_thresholds(th)
+            else:
+                self.set_thresholds(th)    
+                
             preds_no_th, labels_test = self.classify(use_th=False)
             preds, labels_test = self.classify(use_th=True)
 
+            # Compute metrics
             result = compute_metrics(labels_test, preds_no_th, preds, self.num_classes)
-
+            
             accuracy_known += [round(result["acc_known"], 4)]
             accuracy_known_th += [round(result["acc_known_th"], 4)]
             accuracy_unknown_th += [round(result["acc_unk_th"], 4)]
             accuracy_os += [round(result["acc_os"], 4)]
             f1_os += [round(result["f1_os"], 4)]
-
-        # print(f'"Overall best quantile": {q_range[torch.tensor(f1_os).argmax(dim=0)].round(decimals=2)}')
-        # print(f'"quantile": \t{([round(el.item(), 2) for el in q_range])},')
-        # print(f'"known_class_acc": \t\t{accuracy_known},')
-        # print(f'"known_class_acc_th": \t{accuracy_known_th},')
-        # print(f'"unknown_class_acc_th": {accuracy_unknown_th},')
-        # print(f'"open_set_acc": \t\t{accuracy_os},')
-        # print(f'"open_set_f_score": \t{f1_os}')
-
+        
         result = {}
-        result["quantile"] = [round(el.item(), 2) for el in q_range]
+        result["threshold"] = [round(el.item(), 2) for el in th_range]
         result["known_class_acc"] = accuracy_known
         result["known_class_acc_th"] = accuracy_known_th
         result["unknown_class_acc_th"] = accuracy_unknown_th

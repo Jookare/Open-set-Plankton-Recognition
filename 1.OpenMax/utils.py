@@ -15,11 +15,12 @@ class OpenMax(nn.Module):
     Extended utility from pytorch-ood.
     """
     
-    def __init__(self, model, train_loader, test_loader, device, tailsize=20, alpha=5):
+    def __init__(self, model, train_loader, valid_loader, test_loader, device, tailsize=20, alpha=5):
         super(OpenMax, self).__init__()
         self.model = model
         self.model.eval()
         self.train_loader = train_loader
+        self.valid_loader = valid_loader
         self.test_loader = test_loader
         self.device = device
         self.num_classes = train_loader.dataset.num_classes
@@ -28,6 +29,9 @@ class OpenMax(nn.Module):
         print("Fitting weibull model...")
         self.openmax = oodOpenMax(None, tailsize=tailsize, alpha=alpha)
         self.openmax.fit_features(self.features_train, self.labels_train)
+
+        self.valid_probs = torch.tensor(self.openmax._openmax.predict(self.features_valid.numpy())).roll(-1, dims=1)
+        self.test_probs = torch.tensor(self.openmax._openmax.predict(self.features_test.numpy())).roll(-1, dims=1)
 
     def _calc_feature_vectors(self):
         def encode_set(loader):
@@ -40,37 +44,75 @@ class OpenMax(nn.Module):
         with torch.no_grad():
             print("Encoding train set...")
             self.features_train, self.labels_train = encode_set(self.train_loader)
+
+            print("Encoding valid set...")
+            self.features_valid, self.labels_valid = encode_set(self.valid_loader)
             
             print("Encoding test set...")
             self.features_test, self.labels_test = encode_set(self.test_loader)
             
-    def classify(self, threshold, use_th=True):
-        # Ensure device compatibility
-        if not torch.is_tensor(threshold):
-            threshold = torch.tensor(threshold)
+    def find_thresholds(self, quantile):
+        uniq, _ = self.labels_train.unique().sort()
+        self.thresholds = torch.empty(uniq.shape)
+        quantile = quantile.to(torch.float64)
 
-        logits = self.features_test.numpy()
-        # Prediction and threshold adjustment
-        probs = torch.tensor(self.openmax._openmax.predict(logits))
-        if use_th:
-            probs[:, 0] = torch.maximum(probs[:, 0], threshold)
-            probs = probs.roll(-1, dims=1).argmax(dim=1).cpu()
+        indexes = self.labels_valid < self.num_classes
+        known_valid = self.labels_valid[indexes]
+        
+        for lab in uniq:
+            probs = self.valid_probs.clone()
+            probs = probs[indexes]
+            probs = probs[known_valid == lab, lab]
+            self.thresholds[lab] = probs.quantile(q=quantile)
+
+    def set_thresholds(self, threshold):
+        uniq, _ = self.labels_train.unique().sort()
+        self.thresholds = torch.empty(uniq.shape)
+        threshold = threshold.to(torch.float64)
+        
+        # Set same threshold for each class
+        for lab in uniq:
+            self.thresholds[lab] = threshold        
+    
+    def classify(self, test = False, use_th=True):
+        # Classify labels works with class specific thresholds
+        if test:
+            probs = self.test_probs.clone()
+            labels = self.labels_test.cpu().numpy()
         else:
-            probs = probs.roll(-1, dims=1).argmax(dim=1).cpu()
+            probs = self.valid_probs.clone()
+            labels = self.labels_valid.cpu().numpy()
+        
+        if use_th:
+            for i in range(self.num_classes):
+                class_probs = probs[:, i]
+                class_threshold = self.thresholds[i]
+                class_probs[class_probs < class_threshold] = 0
+                
+            probs = probs.argmax(dim=1).cpu()
+        else:
+            probs = probs.argmax(dim=1).cpu()
             
         # Return predictions and labels
-        return probs.numpy(), self.labels_test.numpy()
-      
-    def multiple_quantile_classify(self, min_q, max_q = 1.0):
+        return probs.numpy(), labels
+    
+    
+    def test_multiple_thresholds(self, min_th, max_th = 1.0, step=0.01, use_quantile=False):
         f1_os = []
         accuracy_os = []
         accuracy_known = []
         accuracy_known_th = []
         accuracy_unknown_th = []
-        q_range = torch.arange(min_q, max_q, 0.01)
-        for th in q_range:
-            preds_no_th, labels_test = self.classify(threshold=th, use_th = False)
-            preds, labels_test = self.classify(threshold=th)
+        th_range = torch.arange(min_th, max_th, step)
+        for th in th_range:
+            if use_quantile:
+                # If set the th value if considered as the quantile
+                self.find_thresholds(th)
+            else:
+                self.set_thresholds(th)    
+            
+            preds_no_th, labels_test = self.classify(use_th = False)
+            preds, labels_test = self.classify(use_th=True)
         
             # Compute metrics
             result = compute_metrics(labels_test, preds_no_th, preds, self.num_classes)
@@ -82,7 +124,7 @@ class OpenMax(nn.Module):
             f1_os += [round(result["f1_os"], 4)]
         
         result = {}
-        result["quantile"] = [round(el.item(), 2) for el in q_range]
+        result["threshold"] = [round(el.item(), 2) for el in th_range]
         result["known_class_acc"] = accuracy_known
         result["known_class_acc_th"] = accuracy_known_th
         result["unknown_class_acc_th"] = accuracy_unknown_th

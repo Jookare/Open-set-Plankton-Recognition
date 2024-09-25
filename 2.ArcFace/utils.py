@@ -117,6 +117,9 @@ class CosineClassif():
         self.labels_gallery,   self.labels_valid,   self.labels_test   = None, None, None
         self.num_classes = self.gallery_loader.dataset.num_classes
         self._find_features()
+        
+        self.dists_valid = pairwise_cosine_similarity(self.features_gallery, self.features_valid)
+        self.dists_test = pairwise_cosine_similarity(self.features_gallery, self.features_test)
 
     def _find_features(self):
         def encode_set(loader):
@@ -136,59 +139,85 @@ class CosineClassif():
             print("Encoding test set...")
             self.features_test, self.labels_test = encode_set(self.test_loader)
         
-    def validate_thresholds(self, quantile):
-        
+    def find_thresholds(self, quantile):
         uniq, _ = self.labels_gallery.unique().sort()
         self.thresholds = torch.empty(uniq.shape)
-                    
+
+        indexes = self.labels_valid < self.num_classes
+        known_valid = self.labels_valid[indexes]
         for lab in uniq:
             features_gallery = self.features_gallery[self.labels_gallery == lab]
-            features_valid   = self.features_valid[self.labels_valid == lab]
+            features_valid   = self.features_valid[indexes]
+            features_valid   = features_valid[known_valid == lab]
             
             dists = pairwise_cosine_similarity(features_gallery, features_valid)
             self.thresholds[lab] = dists.quantile(q=quantile)
     
-    def classify(self, use_th = True):
-        dists = pairwise_cosine_similarity(self.features_gallery, self.features_test)
+    def set_thresholds(self, threshold):
+        uniq, _ = self.labels_train.unique().sort()
+        self.thresholds = torch.empty(uniq.shape)
+        threshold = threshold.to(torch.float64)
+        
+        # Set same threshold for each class
+        for lab in uniq:
+            self.thresholds[lab] = threshold   
+            
+    def classify(self, test = False, use_th = True):
+        if test:
+            dists = self.dists_test
+            labels = self.labels_test.cpu().numpy()
+        else:
+            dists = self.dists_valid
+            labels = self.labels_valid.cpu().numpy()
+        
         vals, idx = dists.max(dim=0)
         pred = self.labels_gallery[idx]
         if use_th:
             pred[vals < self.thresholds[pred]] = self.num_classes
-        return pred.numpy(), self.labels_test.numpy()
+            
+        return pred.numpy(), labels
 
-    def multiple_quantile_classify(self, min_q, max_q=1.0):
+    def test_multiple_thresholds(self, min_th, max_th=1.0, step=0.01, use_quantile=False):
         f1_os = []
         accuracy_os = []
         accuracy_known = []
         accuracy_known_th = []
         accuracy_unknown_th = []
-        q_range = torch.arange(min_q, max_q, 0.01)
-        for q in q_range:
-            self.validate_thresholds(quantile=q)
+        
+        # Use custom range for plain threshold
+        if use_quantile:  
+            th_range = torch.arange(min_th, max_th, step)
+        else:
+            th_range = torch.cat((torch.arange(0.991, 0.999, 0.001),
+                                  torch.arange(0.999, 0.9999, 0.0001),
+                                  torch.arange(0.9999, 0.99999, 0.00001),
+                                  torch.arange(0.99999, 0.999999, 0.000001))) 
+        
+        for th in th_range:
+            if use_quantile:
+                # If set the th value if considered as the quantile
+                self.find_thresholds(th)
+            else:
+                self.set_thresholds(th)    
+                
             preds_no_th, labels_test = self.classify(use_th=False)
             preds, labels_test = self.classify(use_th=True)
 
+            # Compute metrics
             result = compute_metrics(labels_test, preds_no_th, preds, self.num_classes)
-
+            
             accuracy_known += [round(result["acc_known"], 4)]
             accuracy_known_th += [round(result["acc_known_th"], 4)]
             accuracy_unknown_th += [round(result["acc_unk_th"], 4)]
             accuracy_os += [round(result["acc_os"], 4)]
             f1_os += [round(result["f1_os"], 4)]
-
-        # print(f'"Overall best quantile": {q_range[torch.tensor(f1_os).argmax(dim=0)].round(decimals=2)}')
-        # print(f'"quantile": \t{([round(el.item(), 2) for el in q_range])},')
-        # print(f'"known_class_acc": \t\t{accuracy_known},')
-        # print(f'"known_class_acc_th": \t{accuracy_known_th},')
-        # print(f'"unknown_class_acc_th": {accuracy_unknown_th},')
-        # print(f'"open_set_acc": \t\t{accuracy_os},')
-        # print(f'"open_set_f_score": \t{f1_os}')
-
+        
         result = {}
-        result["quantile"] = [round(el.item(), 2) for el in q_range]
+        result["threshold"] = [round(el.item(), 2) for el in th_range]
         result["known_class_acc"] = accuracy_known
         result["known_class_acc_th"] = accuracy_known_th
         result["unknown_class_acc_th"] = accuracy_unknown_th
         result["open_set_acc"] = accuracy_os
         result["open_set_f_score"] = f1_os
         return result
+
