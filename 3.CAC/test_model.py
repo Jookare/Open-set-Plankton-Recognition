@@ -10,7 +10,7 @@ sys.path.append('../')
 from dataset_process import dataset_creator
 from train_utils import train_test_transform, get_device, get_dataset_path, get_trial_path
 from metrics import compute_metrics
-from backbones import Backbone
+from backbones import Backbone, get_backbone
 
 # Parse arguments 
 def parse_arguments():
@@ -52,9 +52,19 @@ def get_classifier(args, trial):
     # Model
     file_name = f"./models/{args.backbone}_cac_{trial}_224_best_acc.pth"
     print(f"Currently testing model: {file_name}\n")
-    model = Backbone(args.backbone, num_classes)
-    model.load_state_dict(torch.load(file_name))
-    model = model.to(device)
+        
+    # Initialize the backbone and Arcface model 
+    try:
+        print("Using get_backbone()...")
+        model = get_backbone(args.backbone, num_classes)
+        model.load_state_dict(torch.load(file_name))
+    except RuntimeError:
+        print("get_backbone() failed, trying Backbone()...")
+        model = Backbone(args.backbone, num_classes)
+        model.load_state_dict(torch.load(file_name))
+    except Exception as e:
+        print(f"An error occurred while loading the model: {e}")
+        raise e  # Re-raise the error for debugging
 
     # Define a CAC classifier
     classifier = CACClassif(model, train_loader, valid_loader, test_loader, device)
