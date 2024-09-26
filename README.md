@@ -6,12 +6,17 @@ Implementation of the open-set recognition methods from the paper "Open-set Plan
 This repository contains implementations of three open-set recognition methods:
 - **OpenMax** 
     - A. Bendale and T. Boult, *"Towards Open Set Deep Networks,"* CVPR 2016
+    
+    <img src="./images/OpenMax.png" width="700" height="auto"/>
 - **ArcFace** 
     - J. Deng, et al. *"Arcface: Additive Angular Margin Loss for Deep Face Recognition,"* CVPR 2019
     - O. Mohamed, et al. *"Open-Set Plankton Recognition Using Similarity Learning,"* ISVC 2022
+
+    <img src="./images/ArcFace.png" width="700" height="auto"/>
 - **Class Anchored Clustering**
     - D. Miller, et al. *"Class Anchor Clustering: A Loss for Distance-Based Open Set Recognition,"* WACV 2021
 
+    <img src="./images/CAC.png" width="700" height="auto"/>
 ## Usage
 
 ### Datasets
@@ -19,7 +24,9 @@ The codes utilize both [SYKE-plankton_IFCB_2022](https://doi.org/10.23728/b2shar
 
 1. Download both datasets, and take the folders 'images', and 'class splits' and move those inside the data folder. Move the "labeled_20201020" folder from the SYKE-plankton_IFCB_2022 inside 'images'
 
-2. Run the code in the Jupyter notebook `dataset_creator.ipynb` or alternatively run using ipython:
+2. The `environment.yml` file contains the required conda and pip packages.
+
+3. Run the code in the Jupyter notebook `dataset_creator.ipynb` or alternatively run using ipython:
 ```python
 ipython
 %run dataset_creator.ipynb
@@ -35,16 +42,24 @@ What the code does:
 >[!NOTE]
 >Some folders might be empty for zooplankton data in train and validation. This is to make sure the split class indices work as intended   
 
-3. 
-
+4. The folders contain both training and testing codes for each of the method.
+    - The training code saves both best validation accuracy and best loss models and for CAC also best anchor loss. 
+    ```Python
+    python train_model.py --dataset zooplankton --trial 0 --backbone resnet18 --batch_size 50 --num_workers 4 --name 224_zoo
+    ```
+    - The testing codes work such that first a best threshold is found for validation set which is then used for test set. 
+    ```Python
+    python test_model.py --dataset zooplankton --num_trials 1 --start_trial 0 --backbone resnet18 --batch_size 50 --num_workers 4 --name 224_zoo_best_acc
+    ```
 
 ## Citation
+>[!NOTE]
+> Update coming when full citation is available
+
 
 ```text
-@inproceedings{open-set-plankton,
+@inproceedings{openSetPlankton,
   title={Open-set Plankton Recognition},
-  author={kareinen, Joona and Skyttä, Annaliina and Eerola, Tuomas and Kraft, Kaisa and Lensu, Lasse and Suikkanen, Sanna and Lehtiniemi, Maiju and Kälviäinen, Heikki},
-  booktitle={ECCV2024},
-  pages={???}
+  author={kareinen, Joona and Skyttä, Annaliina and Eerola, Tuomas and Kraft, Kaisa and Lensu, Lasse and Suikkanen, Sanna and Lehtiniemi, Maiju and Kälviäinen, Heikki}
 }
 ```
