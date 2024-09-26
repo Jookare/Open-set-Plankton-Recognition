@@ -14,12 +14,12 @@ from backbones import Backbone
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Open Set Classifier Training')
-    parser.add_argument('--trial', required=False, type=int, help='Trial number, 0-4 provided')
+    parser.add_argument('--trial', required=True, type=int, help='Trial number, 0-4 provided')
     parser.add_argument('--backbone', default=None, type=str, help='Define backbone model', choices=['resnet18', 'densenet121'])
-    parser.add_argument('--num_unk', required=True, type=int, help='Number of unknown classes. Set 0 to train in closed set mode')
     parser.add_argument('--no_normalize', action='store_false', help="If set, normalization will be disabled")
     parser.add_argument('--dataset', required=True, type=str, help='Name of the dataset', choices=['zooplankton', 'phytoplankton'])
     parser.add_argument('--batch_size', default=100, type=int)
+    parser.add_argument('--num_workers', default=2, type=int)
     parser.add_argument('--name', default="", type=str, help='Optional name for saving')
     return parser.parse_args()
 
@@ -41,8 +41,8 @@ def main():
     
     # Define datasets
     train_dataset, valid_dataset, _ = dataset_creator.get_datasets(path, trial_path, args.trial, transform, unk_in_valid=False, gallery=False)
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=10)
-    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=10)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=args.num_workers)
+    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=args.num_workers)
     num_classes = train_dataset.num_classes
 
     # Model

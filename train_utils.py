@@ -50,8 +50,8 @@ def get_device():
 
 def get_dataset_path(dataset):
     dataset_paths = {
-        "zooplankton": "../Data/images/zooplankton_224",
-        "phytoplankton": "../Data/images/phytoplankton_224"
+        "zooplankton": "../data/images/zooplankton_224",
+        "phytoplankton": "../data/images/phytoplankton_224"
     }
     return dataset_paths.get(dataset)
 

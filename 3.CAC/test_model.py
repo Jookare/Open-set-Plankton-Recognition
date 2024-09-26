@@ -18,11 +18,15 @@ def parse_arguments():
     parser.add_argument('--num_trials', default = 5, type = int, help='Number of trials to average results over?')
     parser.add_argument('--start_trial', default = 0, type = int, help='Trial number to start evaluation for?')
     parser.add_argument('--backbone', default = None, type = str, help='Define backbone model', choices = ['resnet18', 'densenet121'])
-    parser.add_argument('--num_unk', required = True, type = int, help='Number of unknown classes')
     parser.add_argument('--magnitude', default = 10, type = int, help='Magnitude of the anchor point')
     parser.add_argument('--scale', default = 0.1, type = float, help='Weighting of Anchor loss component')
-    parser.add_argument('--use_quantile', action='store_true', help="If flag is set, quantile will be used")
-    parser.add_argument('--name', default="", type = str, help='Name of the model file') 
+    parser.add_argument('--no_normalize', action='store_false', help="default to True, if set on then False")
+    parser.add_argument('--dataset', required=True, type = str, help='Name of the model file', choices = ['zooplankton', 'phytoplankton']) 
+    parser.add_argument('--batch_size', default=100, type=int)
+    parser.add_argument('--num_workers', default=2, type=int)
+    parser.add_argument('--use_quantile', action='store_true', help="default to False, if set on then True")
+    
+    parser.add_argument('--name', default="", type = str, help='Optional name for saving') 
     args = parser.parse_args()
     return args
 
@@ -42,23 +46,23 @@ def get_classifier(args, trial):
 
     # Define the unknown indices
     train_dataset, valid_dataset, test_dataset = dataset_creator.get_datasets(path, trial_path, trial, transform, unk_in_valid=True, gallery=False)
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=10)
-    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=10)
-    test_loader =  DataLoader(test_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=10)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=args.num_workers)
+    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=False, pin_memory=True, num_workers=args.num_workers)
+    test_loader =  DataLoader(test_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=args.num_workers)
 
     # Set the num classes
     num_classes = train_dataset.num_classes
     
     # Model
-    file_name = f"./models/CAC_{args.backbone}_{trial}_{args.name}_best_acc.pth"
+    file_name = f"./models/CAC_{args.backbone}_{trial}_{args.name}.pth"
     print(f"Currently testing model: {file_name}\n")
         
     # Initialize the backbone and Arcface model 
     model = Backbone(args.backbone, num_classes)
-    model.load_state_dict(torch.load(file_name))
+    model.load_state_dict(torch.load(file_name, weights_only=True, map_location=device))
 
     # Define a CAC classifier
-    classifier = CACClassif(model, train_loader, valid_loader, test_loader, device)
+    classifier = CACClassif(model, train_loader, valid_loader, test_loader, num_classes, device)
     return classifier
 
 # Get arguments
@@ -92,9 +96,6 @@ test_result = []
 for trial_num in range(start_trial, start_trial + num_trials):
     with torch.no_grad():
         torch.cuda.empty_cache()
-    
-    # Get the classifier
-    classifier = get_classifier(args, trial_num)
     
     # set the thresholds
     if args.use_quantile:

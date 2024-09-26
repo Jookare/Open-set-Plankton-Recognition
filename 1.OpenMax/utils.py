@@ -124,7 +124,7 @@ class OpenMax(nn.Module):
             f1_os += [round(result["f1_os"], 4)]
         
         result = {}
-        result["threshold"] = [round(el.item(), 2) for el in th_range]
+        result["threshold"] = [round(el.item(), 8) for el in th_range]
         result["known_class_acc"] = accuracy_known
         result["known_class_acc_th"] = accuracy_known_th
         result["unknown_class_acc_th"] = accuracy_unknown_th

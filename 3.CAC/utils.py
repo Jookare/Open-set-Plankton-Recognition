@@ -134,7 +134,7 @@ class CACClassif:
         
         return pred.cpu().numpy(), labels
 
-    def multiple_quantile_classify(self, min_th, max_th=1.0, step=0.01, use_quantile=False):
+    def test_multiple_thresholds(self, min_th, max_th=1.0, step=0.01, use_quantile=False):
         f1_os = []
         accuracy_os = []
         accuracy_known = []
@@ -168,7 +168,7 @@ class CACClassif:
             f1_os += [round(result["f1_os"], 4)]
         
         result = {}
-        result["threshold"] = [round(el.item(), 2) for el in th_range]
+        result["threshold"] = [round(el.item(), 8) for el in th_range]
         result["known_class_acc"] = accuracy_known
         result["known_class_acc_th"] = accuracy_known_th
         result["unknown_class_acc_th"] = accuracy_unknown_th

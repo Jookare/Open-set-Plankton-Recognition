@@ -18,13 +18,13 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description='Open Set Classifier Training')
     parser.add_argument('--trial', required = False, type = int, help='Trial number, 0-4 provided')
     parser.add_argument('--backbone', default = None, type = str, help='Define backbone model', choices = ['resnet18'])
-    parser.add_argument('--num_unk', required = True, type = int, help='Number of unknown classes. Set 0 to train in closed set mode')
     parser.add_argument('--scale', default = 2.39, type = int, help='Scale for Arcface')
     parser.add_argument('--margin', default = 0.95, type = int, help='Margin for Arcface')
     parser.add_argument('--backbone_dim', default = 512, type = int, help='Number of features the backbone returns')
     parser.add_argument('--no_normalize', action='store_false', help="default to True, if set on then false")
     parser.add_argument('--dataset', required=True, type = str, help='Name of the model file', choices = ['zooplankton', 'phytoplankton']) 
     parser.add_argument('--batch_size', default=100, type=int)
+    parser.add_argument('--num_workers', default=2, type=int)
     parser.add_argument('--name', default="", type = str, help='Optional name for saving') 
     return parser.parse_args()
 
@@ -47,8 +47,8 @@ def main():
     
     # Define datasets
     train_dataset, valid_dataset, _ = dataset_creator.get_datasets(path, trial_path, args.trial, transform, unk_in_valid=False, gallery=False)
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=10)
-    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=10)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=args.num_workers)
+    valid_loader = DataLoader(valid_dataset, batch_size=batch_size, shuffle=True, pin_memory=True, num_workers=args.num_workers)
     num_classes = train_dataset.num_classes
 
     # Initialize the backbone and Arcface model
