@@ -3,8 +3,8 @@ from PIL import Image
 import random
 from tqdm import tqdm
 from pathlib import Path
-import shutil
-import os
+random.seed(42)
+
 
 # Function to save augmented images for each class in train/val/test datasets
 def save_images(image_paths, class_name,  dataset_type, output_folder_path, transform):

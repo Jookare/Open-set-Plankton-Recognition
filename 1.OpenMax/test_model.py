@@ -10,7 +10,7 @@ sys.path.append('../')
 from dataset_process import dataset_creator
 from train_utils import train_test_transform, get_device, get_dataset_path, get_trial_path
 from metrics import compute_metrics
-from backbones import Backbone, get_backbone
+from backbones import Backbone
 
 # Parse arguments 
 def parse_arguments():
@@ -48,21 +48,11 @@ def get_classifier(args, trial):
     num_classes = train_dataset.num_classes
 
     # Model
-    file_name = f"./models_phyto/OpenMax_{args.backbone}_{trial_num}_{args.name}_best_acc.pth"
+    file_name = f"./models/OpenMax_{args.backbone}_{trial}_{args.name}_best_acc.pth"
     print(f"Currently testing model: {file_name}\n")
-    try:
-        # Attempt to load the model using the `get_backbone` function
-        print("Using get_backbone()...")
-        model = get_backbone(args.backbone, num_classes)
-        model.load_state_dict(torch.load(file_name))
-    except RuntimeError:
-        print("get_backbone() failed, trying Backbone()...")
-        model = Backbone(args.backbone, num_classes)
-        model.load_state_dict(torch.load(file_name))
-    except Exception as e:
-        print(f"An error occurred while loading the model: {e}")
-        raise e  # Re-raise the error for debugging
 
+    model = Backbone(args.backbone, num_classes)
+    model.load_state_dict(torch.load(file_name))
     
     # OpenMax model
     openmax = OpenMax(model, train_loader, valid_loader, test_loader, device, tailsize=20, alpha=5)
