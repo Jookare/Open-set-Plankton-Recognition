@@ -56,10 +56,3 @@ What the code does:
 >[!NOTE]
 > Update coming when full citation is available
 
-
-```text
-@inproceedings{openSetPlankton,
-  title={Open-set Plankton Recognition},
-  author={kareinen, Joona and Skyttä, Annaliina and Eerola, Tuomas and Kraft, Kaisa and Lensu, Lasse and Suikkanen, Sanna and Lehtiniemi, Maiju and Kälviäinen, Heikki}
-}
-```
