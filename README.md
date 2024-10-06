@@ -53,6 +53,8 @@ What the code does:
     ```
 
 ## Citation
->[!NOTE]
-> Update coming when full citation is available
-
+@inproceedings{openSetPlankton,
+  title={Open-set Plankton Recognition},
+  author={kareinen, Joona and Skytt\"{a}, Annaliina and Eerola, Tuomas and Kraft, Kaisa and Lensu, Lasse and Suikkanen, Sanna and Lehtiniemi, Maiju and K\"{a}lvi\"{a}inen, Heikki},
+  booktitle={ECCV 2024}
+}
