@@ -57,6 +57,6 @@ What the code does:
 @inproceedings{openSetPlankton,
   title={Open-set Plankton Recognition},
   author={Kareinen, Joona and Skytt\"{a}, Annaliina and Eerola, Tuomas and Kraft, Kaisa and Lensu, Lasse and Suikkanen, Sanna and Lehtiniemi, Maiju and K\"{a}lvi\"{a}inen, Heikki},
-  booktitle={ECCV 2024}
+  booktitle={Out of Distribution Generalization in Computer Vision workshop at ECCV 2024}
 }
 ```
