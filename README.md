@@ -54,9 +54,18 @@ What the code does:
 
 ## Citation
 ```
-@inproceedings{openSetPlankton,
-  title={Open-set Plankton Recognition},
-  author={Kareinen, Joona and Skytt\"{a}, Annaliina and Eerola, Tuomas and Kraft, Kaisa and Lensu, Lasse and Suikkanen, Sanna and Lehtiniemi, Maiju and K\"{a}lvi\"{a}inen, Heikki},
-  booktitle={Out of Distribution Generalization in Computer Vision workshop at ECCV 2024}
+
+@InProceedings{opensetplankton2025,
+    author="Kareinen, Joona
+    and Skytt{\"a}, Annaliina
+    and Eerola, Tuomas
+    and Kraft, Kaisa
+    and Lensu, Lasse
+    and Suikkanen, Sanna
+    and Lehtiniemi, Maiju
+    and K{\"a}lvi{\"a}inen, Heikki",
+    title="Open-Set Plankton Recognition",
+    booktitle="Computer Vision -- ECCV 2024 Workshops",
+    year="2025"
 }
 ```
