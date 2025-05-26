@@ -24,9 +24,7 @@ The codes utilize both [SYKE-plankton_IFCB_2022](https://doi.org/10.23728/b2shar
 
 1. Download both datasets, and take the folders 'images', and 'class splits' and move those inside the data folder. Move the "labeled_20201020" folder from the SYKE-plankton_IFCB_2022 inside 'images'
 
-2. The `environment.yml` file contains the required conda and pip packages.
-
-3. Run the code in the Jupyter notebook `dataset_creator.ipynb` or alternatively run using ipython:
+2. Run the code in the Jupyter notebook `dataset_creator.ipynb` or alternatively run using ipython:
 ```python
 ipython
 %run dataset_creator.ipynb
@@ -42,7 +40,7 @@ What the code does:
 >[!NOTE]
 >Some folders might be empty for zooplankton data in train and validation. This is to make sure the split class indices work as intended   
 
-4. The folders contain both training and testing codes for each of the method.
+3. The folders contain both training and testing codes for each of the method.
     - The training code saves both best validation accuracy and best loss models and for CAC also best anchor loss. 
     ```Python
     python train_model.py --dataset zooplankton --trial 0 --backbone resnet18 --batch_size 50 --num_workers 4 --name 224_zoo
